@@ -21,15 +21,15 @@ class User:
       "email": request.form.get('email'),
       "password": request.form.get('password')
     }
-    print(user)
+
     # Encrypt the password
-    # user['password'] = pbkdf2_sha256.encrypt(user['password'])
+    user['password'] = pbkdf2_sha256.encrypt(user['password'])
 
     # Check for existing email address
     if db.users.find_one({ "email": user['email'] }):
       return jsonify({ "error": "Email address already in use" }), 400
 
-    if db.users.insert_one(user):
+    if db.users.insert_one({**user,'matches':{}}):
       return self.start_session(user)
 
     return jsonify({ "error": "Signup failed" }), 400
@@ -45,6 +45,7 @@ class User:
     })
 
     if user and pbkdf2_sha256.verify(request.form.get('password'), user['password']):
+      del user['matches']
       return self.start_session(user)
     
     return jsonify({ "error": "Invalid login credentials" }), 401
