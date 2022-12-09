@@ -3,6 +3,8 @@ from flask import Flask, render_template, request, session, redirect
 from functools import wraps
 import pymongo
 from battleship.bts import *
+import json
+
 
 app = Flask(__name__)
 app.secret_key = b'\xcc^\x91\xea\x17-\xd0W\x03\xa7\xf8J0\xac8\xc5'
@@ -88,3 +90,22 @@ def calculate():
             return render_template('won.html', coords=list(cur_match))
 
     return render_template('main.html', grid=grid)
+
+@app.route('/leaderboard/')
+@login_required
+def leaderboard():
+    data = db.users.find()
+    values = dict()
+    for user in data:
+        game_arr =[]
+        for match in user['matches']:
+            moves=0
+            for play in user['matches'][match]:
+                moves+=1
+            game_arr.append(moves)
+        print(game_arr)
+        game_arr.sort()
+        values[user['name']]=game_arr[0]
+    rankings = sorted(values.items(), key=lambda x:x[1])
+
+    return render_template('leaderboard.html', data = rankings )
