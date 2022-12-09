@@ -14,7 +14,7 @@ def displayGrid(grid):
 def validateRow(row):
     if not row.isdigit(): #presence and type check
         return False
-    if int(row) < 0 or int(row) > 3: #range check
+    if int(row) < 0 or int(row) > 4: #range check
         return False
     return True
 

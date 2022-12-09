@@ -3,7 +3,6 @@ from flask import Flask, render_template, request, session, redirect
 from functools import wraps
 import pymongo
 from battleship.bts import *
-import json
 
 
 app = Flask(__name__)
@@ -16,8 +15,8 @@ db = client.user_login_system
 
 def RandomShip():
     global ship_X, ship_Y, won
-    ship_X = random.randint(0, 4)
-    ship_Y = random.randint(0, 5)
+    ship_X = random.randint(0, len(grid))
+    ship_Y = random.randint(0, len(grid))
     won = False
     print("ship_X: ", ship_X)
     print("ship_Y: ", ship_Y)
@@ -39,6 +38,7 @@ def login_required(f):
 # Routes
 from user import routes
 
+
 @app.route('/')
 def home():
     return render_template('home.html')
@@ -53,12 +53,12 @@ def dashboard():
     #your code here#
     ################
 
-    RandomShip()
     grid = initialiseGrid()
+    RandomShip()
     user_data = db.users.find_one(session['user'])
     num = len(user_data["matches"])
     db.users.find_one_and_update(session['user'], {
-        '$set': {'matches.match_'+str(num): []}
+        '$set': {'matches.match_'+str(num)+'.won': False}
     })
     return render_template('main.html', grid=grid)
 
@@ -79,17 +79,20 @@ def calculate():
         # coordinates.insert_one(xy_coord)
         print(db.users.find_one_and_update(session['user'], {
             '$push': {
-              'matches.match_'+str(num): xy_coord
+              'matches.match_'+str(num)+'.moves': xy_coord
               }
         }))
         won = checkResult(grid, int(X), int(Y), ship_X, ship_Y, won)
 
         if won:
-            user_data = db.users.find_one(session['user'])
-            cur_match = user_data['matches']['match_'+str(num)]
+            user_data = db.users.find_one_and_update(session['user'], {
+                '$set': {'matches.match_'+str(num)+'.won': True}
+            })
+            cur_match = user_data['matches']['match_'+str(num)]['moves']
             return render_template('won.html', coords=list(cur_match))
 
     return render_template('main.html', grid=grid)
+
 
 @app.route('/leaderboard/')
 @login_required
@@ -97,15 +100,16 @@ def leaderboard():
     data = db.users.find()
     values = dict()
     for user in data:
-        game_arr =[]
+        game_arr = []
+        wins = 0
         for match in user['matches']:
-            moves=0
-            for play in user['matches'][match]:
-                moves+=1
-            game_arr.append(moves)
-        print(game_arr)
+            if user['matches'][match]['won']:
+                wins+=1
+                moves = len(user['matches'][match]['moves'])
+                # for play in user['matches'][match]:
+                game_arr.append(moves)
+    #     print(game_arr)
         game_arr.sort()
-        values[user['name']]=game_arr[0]
-    rankings = sorted(values.items(), key=lambda x:x[1])
-
-    return render_template('leaderboard.html', data = rankings )
+        values[user['name']] = {'best':game_arr[0],'wins':str(wins) , 'loss':str(len(user['matches']) - wins)}
+        rankings = sorted(values.items(), key= lambda x: x[1]['best'])
+    return render_template('leaderboard.html', data=rankings)

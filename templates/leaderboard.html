@@ -1,14 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <style>
+        th,td{
+            padding:0.5em;
+        }
+    </style>
 </head>
+
 <body>
-    {%for i in data%}
-    <p>{{i[0]}} - {{i[1]}}</p>
-    {%endfor%}
+    <table>
+        <tr>
+            <th>Player Name</th>
+            <th>High Score</th>
+            <th>Wins</th>
+            <th>Losses</th>
+        </tr>
+        {%for i in data%}
+        <tr>
+            <td>{{i[0]}}</td>
+            <td>{{i[1]['best']}}</td>
+            <td>{{i[1]['wins']}}</td>
+            <td>{{i[1]['loss']}}</td>
+        </tr>
+        {%endfor%}
+    </table>
+
 </body>
+
 </html>
